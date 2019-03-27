@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">OkHttpAndRetrofitSample</string>
+    <string name="title_main">Main Activity</string>
+    <string name="title_connection">Network Connection</string>
+    <string name="title_connection_with_okhttp">Network Connection with OkHttp</string>
+    <string name="title_connection_with_retrofit">Network Connection with Retrofit</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
