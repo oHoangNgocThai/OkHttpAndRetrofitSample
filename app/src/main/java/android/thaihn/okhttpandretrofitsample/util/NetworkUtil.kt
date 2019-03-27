@@ -11,6 +11,53 @@ import javax.net.ssl.HttpsURLConnection
 
 object NetworkUtil {
 
+    @Throws(IOException::class)
+    fun downloadUrl(url: URL): String? {
+        var connection: HttpsURLConnection? = null
+        return try {
+            connection = (url.openConnection() as? HttpsURLConnection)
+            connection?.run {
+                readTimeout = 3000
+                connectTimeout = 3000
+                requestMethod = "GET"
+                doInput = true
+                connect()
+
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
+                    throw IOException("Http error code: $responseCode")
+                }
+
+                // get body
+                inputStream?.let { stream ->
+                    readStream(stream, 500)
+                }
+            }
+        } finally {
+            // Close Stream and disconnect HTTPS connection.
+            connection?.inputStream?.close()
+            connection?.disconnect()
+        }
+    }
+
+    @Throws(IOException::class, UnsupportedEncodingException::class)
+    private fun readStream(stream: InputStream, maxReadSize: Int): String? {
+        val reader: Reader? = InputStreamReader(stream, "UTF-8")
+        val rawBuffer = CharArray(maxReadSize)
+        val buffer = StringBuffer()
+        var readSize: Int = reader?.read(rawBuffer) ?: -1
+        var maxReadBytes = maxReadSize
+        while (readSize != -1 && maxReadBytes > 0) {
+            if (readSize > maxReadBytes) {
+                readSize = maxReadBytes
+            }
+            buffer.append(rawBuffer, 0, readSize)
+            maxReadBytes -= readSize
+            readSize = reader?.read(rawBuffer) ?: -1
+        }
+        return buffer.toString()
+    }
+
+
     fun isWifiEnable(context: Context): Boolean {
         val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         var isWifiConn: Boolean = false

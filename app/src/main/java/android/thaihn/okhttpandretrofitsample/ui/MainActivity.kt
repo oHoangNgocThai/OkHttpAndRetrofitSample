@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.thaihn.okhttpandretrofitsample.R
 import android.thaihn.okhttpandretrofitsample.databinding.ActivityMainBinding
-import android.thaihn.okhttpandretrofitsample.network.ConnectionActivity
+import android.thaihn.okhttpandretrofitsample.network.ui.ConnectionActivity
 import android.thaihn.okhttpandretrofitsample.okhttp.OkHttpActivity
 import android.thaihn.okhttpandretrofitsample.retrofit.RetrofitActivity
 

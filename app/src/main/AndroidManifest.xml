@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.thaihn.okhttpandretrofitsample">
+    package="android.thaihn.okhttpandretrofitsample">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -12,19 +12,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".retrofit.RetrofitActivity">
-        </activity>
-        <activity android:name=".okhttp.OkHttpActivity">
-        </activity>
-        <activity android:name=".network.ConnectionActivity"/>
+        <activity android:name=".retrofit.RetrofitActivity" />
+        <activity android:name=".okhttp.OkHttpActivity" />
+        <activity android:name=".network.ui.ConnectionActivity" />
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/title_main">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <action android:name="android.intent.action.VIEW"/>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--Setting Network Activity-->
+        <activity
+            android:name=".network.ui.SettingNetworkActivity"
+            android:label="@string/title_setting_network">
+            <intent-filter>
+                <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
     </application>

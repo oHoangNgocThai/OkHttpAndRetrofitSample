@@ -1,15 +1,17 @@
-package android.thaihn.okhttpandretrofitsample.network
+package android.thaihn.okhttpandretrofitsample.network.ui
 
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.thaihn.okhttpandretrofitsample.R
 import android.thaihn.okhttpandretrofitsample.databinding.ActivityConnectionBinding
+import android.thaihn.okhttpandretrofitsample.network.*
 import android.thaihn.okhttpandretrofitsample.util.NetworkUtil
 import android.util.Log
 import android.view.MenuItem
 
-class ConnectionActivity : AppCompatActivity(), DownloadCallback<String> {
+class ConnectionActivity : AppCompatActivity(),
+    DownloadCallback<String> {
 
     companion object {
         private val TAG = ConnectionActivity::class.java.simpleName
@@ -28,10 +30,14 @@ class ConnectionActivity : AppCompatActivity(), DownloadCallback<String> {
         supportActionBar?.title = "Connection Sample"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        networkFragment = NetworkFragment.getInstance(supportFragmentManager, "https://www.google.com")
+        networkFragment = NetworkFragment.getInstance(
+            supportFragmentManager,
+            "https://api.github.com/search/repositories?q=mario?language:kotlin&sort=stars&order=desc"
+        )
 
         mBinding.btnFetchData.setOnClickListener {
-            startDownload()
+//            startDownload()
+            SearchAsync().execute("https://api.github.com/search/repositories?q=mario?language:kotlin&sort=stars&order=desc")
         }
 
         mBinding.btnClearData.setOnClickListener {

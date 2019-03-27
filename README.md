@@ -62,7 +62,35 @@ fun isOnline(): Boolean {
 }
 ```
 
+## Manage network usage
 
+* Có thể tùy chọn cho phép người dùng kiểm soát rõ ràng việc sử dụng tài nguyên mạng của ứng dụng. Ví dụ:
+
+    * Chỉ cho phép người dùng tải lên video hoặc là tải về dữ liệu nặng khi kết nối với Wi-Fi.
+    * Có thể đồng bộ hóa dữ liệu hoặc không tùy chọn vào các tiêu chí như khả dụng của mạng, thời gian, ...
+    
+* Để có thể tạo ra ứng dụng có thể truy cập mạng, tệp kê khai AndroidManifest phải được kê khai quyền truy cập:
+
+    * **android.permission.INTERNET**: Cho phép ứng dụng mở kết nối mạng sử dụng socket.
+    * **android.permission.ACCESS_NETWORK_STATE**: Cho phép người dùng có thể đọc được các thông tin của mạng.
+    
+* Để tạo được ứng dụng có thể quản lý được việc sử dụng mạng, cần tạo **intern-filter** có action **android.intent.action.MANAGE_NETWORK_USAGE** để lắng nghe được các sự kiện thay đổi của network:
+
+```
+<activity android:label="SettingsActivity" android:name=".SettingsActivity">
+    <intent-filter>
+        <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </intent-filter>
+</activity>
+```
+
+* Theo đó, tạo ra 1 Activity là lớp con của **PreferenceActivity** để hiển thị ra cho người dùng có thể chỉ định các mục như:
+
+    * Có hiển thị tóm tắt cho từng mục nhập từ nguồn cấp dữ liệu XML hay chỉ là một liên kết cho mỗi mục nhập.
+    * Có nên tải xuống nguồn cấp dữ liệu XML nếu có bất kì kết nối nào hay chỉ khi có Wi-Fi.
+    
+* Lớp này implement **OnSharedPreferenceChangeListener**, khi người dùng thay đổi thì sẽ được lưu lại và làm mới khi người dùng trở lại activity trước đó. Cài đặt chi tiết tham khảo tại [đây](https://developer.android.com/training/basics/network-ops/managing#prefs)
 
 # Network connection with OkHttp
 
