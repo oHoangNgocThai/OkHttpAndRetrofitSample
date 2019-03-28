@@ -13,10 +13,8 @@ import android.util.Log
 import android.view.MenuItem
 import android.widget.Toast
 import com.google.gson.Gson
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
+import java.io.IOException
 import java.net.URL
 
 class OkHttpActivity : AppCompatActivity() {
@@ -81,8 +79,28 @@ class OkHttpActivity : AppCompatActivity() {
             if (key != null) {
                 val request = createRequest(key)
 
+                // Call synchronous
                 val response: Response = OkHttpClient().newCall(request).execute()
                 Log.d(TAG, "Response:$response")
+
+                // Call asynchronous
+//                val request = createRequest(key)
+//                OkHttpClient().newCall(request).enqueue(object : Callback {
+//
+//                    override fun onResponse(call: Call, response: Response) {
+//                        val strResponse = response.body()?.string()?.trim()
+//                        Log.d(TAG, "Response: $strResponse")
+//                        if (strResponse != null) {
+//                            responseSearch = Gson().fromJson(strResponse, SearchResponse::class.java)
+//                        }
+//                        return responseSearch
+//                    }
+//
+//                    override fun onFailure(call: Call, e: IOException) {
+//                        e.printStackTrace()
+//                        Log.d(TAG, "onFailure: ${e.message}")
+//                    }
+//                })
 
                 val strResponse = response.body()?.string()?.trim()
                 if (strResponse != null) {

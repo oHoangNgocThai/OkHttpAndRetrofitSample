@@ -1,5 +1,7 @@
 # OkHttpAndRetrofitSample
 
+Sử dụng Network Connection để thực hiện connect với URL và lấy về dữ liệu. Trong project là ví dụ tìm kiếm repository của Github sử dụng API mà Github cung cấp.
+
 # Overview
 
 * Android hỗ trợ ứng dụng của bạn có thể kết nối internet hoặc là bất kì một local network nào và cho phép bạn thực hiện các hành động liên quan đến network.
@@ -173,5 +175,71 @@ stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
 ## Optimize network data usage
 
 # Network connection with OkHttp
+
+* OkHTTP là một dự án mã nguồn mở được thiết kế để trở thành một client HTTP hiệu quả. Nó hỗ trợ giao thức SPDY, giao thức này là cơ sở cho HTTP 2.0 và cho nhiều request HTTP được phép trên một luồng socket.
+* Thêm dependency của **OkHttp** vào file build.gradle:
+
+```
+implementation 'com.squareup.okhttp:okhttp:2.5.0'
+```
+
+## Create Request object
+
+* Để sử dụng OkHttp, chúng ta cần phải tạo ra một Request Object chứa thông tin để gửi request:
+
+```
+val request = Request.Builder()
+    .url(url)
+    .build()
+```
+
+* Bạn cũng có thể thêm các query hoặc param cho url bằng cách sử dụng **HttpUrl.Builder**:
+
+```
+val url: String = HttpUrl.parse("https://api.github.com/search/repositories")?.newBuilder()?.apply {
+    addQueryParameter("q", key)
+    addQueryParameter("sort", "")
+    addQueryParameter("order", "desc")
+}?.build().toString()
+```
+
+* Có thể thêm Header vào Request object như sau:
+
+```
+val request = Request.Builder()
+    .header("Content-Type", "application/json")
+    ...
+```
+
+## Sending and receive network call
+
+* Để thực hiện việc call network đồng bộ, hãy sử dụng **OkHttpClient** để tạo và sử dụng phương thức **execute**:
+
+```
+val client = OkHttpClient()
+val response: Response = client.newCall(request).execute()
+val strResponse = response.body()?.string()?.trim()
+```
+
+* Nếu muốn thực hiện call network bất đồng bộ, hãy sử dụng phương thức **enqueue**:
+
+```
+OkHttpClient().newCall(request).enqueue(object : Callback {
+
+    override fun onResponse(call: Call, response: Response) {
+        val strResponse = response.body()?.string()?.trim()
+        Log.d(TAG, "Response: $strResponse")
+        if (strResponse != null) {
+            responseSearch = Gson().fromJson(strResponse, SearchResponse::class.java)
+        }
+        return responseSearch
+    }
+
+    override fun onFailure(call: Call, e: IOException) {
+        e.printStackTrace()
+        Log.d(TAG, "onFailure: ${e.message}")
+    }
+})
+``` 
 
 # Network connection with Retrofit
