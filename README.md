@@ -92,6 +92,86 @@ fun isOnline(): Boolean {
     
 * Lớp này implement **OnSharedPreferenceChangeListener**, khi người dùng thay đổi thì sẽ được lưu lại và làm mới khi người dùng trở lại activity trước đó. Cài đặt chi tiết tham khảo tại [đây](https://developer.android.com/training/basics/network-ops/managing#prefs)
 
+## Connect and get content
+
+* Khi connect với mạng, cần thực hiện trên một thread khác, sử dụng **AsyncTask** để tạo một thread chạy dưới background, sau đó cập nhật trên main thread.
+
+```
+inner class SearchRepositoryAsync : AsyncTask<String, Int, SearchResponse>() {
+
+    override fun doInBackground(vararg params: String?): SearchResponse? {
+        var searchResponse: SearchResponse? = null
+        val key: String? = params[0]
+        if (key != null) {
+            try {
+                val urlString = createUrl(key)
+                val resultString = downloadUrl(urlString)
+                Log.d(TAG, "Response: $resultString")
+
+                resultString?.let {
+                    searchResponse = Gson().fromJson(it, SearchResponse::class.java)
+                }
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                Log.d(TAG, "Exception: ${ex.message}")
+            }
+        }
+        return searchResponse
+    }
+
+    override fun onPostExecute(result: SearchResponse?) {
+        Log.d(TAG, "Result: $result")
+        if (result != null) {
+            // update ui
+        }
+}
+```
+
+* Ở trên sử dụng hàm **downloadUrl** được tạo để lấy ra được **InputStream** khi kết nối thành công với network.
+
+```
+@Throws(IOException::class)
+    fun downloadUrl(urlStr: String): String {
+        var result = ""
+        var connection: HttpsURLConnection? = null
+        try {
+            val url = URL(urlStr)
+            connection = url.openConnection() as HttpsURLConnection
+            connection.run {
+                readTimeout = 6000
+                connectTimeout = 6000
+                requestMethod = "GET"
+                doInput = true
+                connect()
+
+                Log.d(TAG, "responseCode: $responseCode")
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
+                    throw IOException("HTTP error code: $responseCode")
+                }
+
+                inputStream?.let { stream ->
+                    result = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    stream.close()
+                }
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        } finally {
+            connection?.inputStream?.close()
+            connection?.disconnect()
+        }
+    return result
+}
+```
+
+* Khi kết nối thành công, sẽ trả về cho chúng ta **responseCode** và các thông tin khác, sử dụng **InputStream** để đọc ra dữ liệu:
+
+```
+stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+```
+
+## Optimize network data usage
+
 # Network connection with OkHttp
 
 # Network connection with Retrofit
