@@ -14,7 +14,7 @@
         android:theme="@style/AppTheme">
         <activity android:name=".retrofit.RetrofitActivity" />
         <activity android:name=".okhttp.OkHttpActivity" />
-        <activity android:name=".network.ui.ConnectionActivity" />
+        <activity android:name=".network.ConnectionActivity" />
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/title_main">

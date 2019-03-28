@@ -102,16 +102,16 @@ class OkHttpActivity : AppCompatActivity() {
         }
 
         private fun createRequest(key: String): Request {
-            val url = URL(createUrl("https://api.github.com/search/repositories", key))
+            val url = URL(createUrl(key))
 
             return Request.Builder()
-                .header("Content-Type", "application/json")
-                .url(url)
-                .build()
+                    .header("Content-Type", "application/json")
+                    .url(url)
+                    .build()
         }
 
-        private fun createUrl(root: String, key: String): String {
-            return HttpUrl.parse(root)?.newBuilder()?.apply {
+        private fun createUrl(key: String): String {
+            return HttpUrl.parse("https://api.github.com/search/repositories")?.newBuilder()?.apply {
                 addQueryParameter("q", key)
                 addQueryParameter("sort", "")
                 addQueryParameter("order", "desc")
