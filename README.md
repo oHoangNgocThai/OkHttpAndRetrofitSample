@@ -243,3 +243,91 @@ OkHttpClient().newCall(request).enqueue(object : Callback {
 ``` 
 
 # Network connection with Retrofit
+
+* Sử dụng thư viện Retrofit để xử lý các request và nhận về các response hoặc error. Được xem là thư viện về network mạnh nhất hiện giờ, trước kia có một thời đã sử dụng thư viện **Volley**.
+* Ứng dụng sử dụng **Restful APIs** để hiển thị nội dung được lấy từ các api. Mọi tương tác này đều cần có mạng để có thể thực hiện được.
+* Trước tiên sử dụng thư viện, thêm dependency vào project:
+
+```
+implementation 'com.squareup.retrofit2:retrofit:2.5.0'
+implementation 'com.squareup.retrofit2:converter-gson:2.5.0'
+implementation 'com.squareup.okhttp3:logging-interceptor:3.13.1'
+implementation 'com.squareup.okhttp3:okhttp:3.13.1'
+```
+
+## Retrofit basic
+
+* Tạo một Service API để định nghĩa phương thức request và các tham số cần truyền vào, ở đây mình sử dụng API search các repository của github:
+
+```
+@GET("search/repositories")
+fun searchUser(
+    @Query("q") query: String,
+    @Query("sort") sort: String,
+    @Query("order") order: String
+): Call<SearchResponse>
+```
+> Ở đây sẽ trả về object [SearchResponse](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample/blob/master/app/src/main/java/android/thaihn/okhttpandretrofitsample/entity/SearchResponse.kt) khi tìm kiếm repository.
+
+* Tạo object sử dụng thư viện **Gson()** để parser dữ liệu bên trong retrofit:
+
+```
+data class SearchResponse(
+        @SerializedName("total_count")
+        val total_count: Int,
+        
+        @SerializedName("incomplete_results")
+        val incomplete_results: Boolean,
+        
+        @SerializedName("items")
+        val items: List<Repository>?
+)
+```
+
+* Sau đó tạo ra một instance từ service đã tạo được cung cấp bởi phương thức **retrofit.create(GithubService::class.java)**:
+
+```
+private fun createService(): GithubService {
+    val BASE_URL = "https://api.github.com"
+
+    val client = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+        })
+        .build()
+
+    val retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    return retrofit.create(GithubService::class.java)
+}
+```
+
+* Thực hiện call api theo phương thức **enqueue**, trả về dữ liệu nhận được nếu thành công là **response.body()**, nếu request lỗi, sẽ nhận được lỗi trong **response.errorBody()**:
+
+```
+val service = createService()
+val callSearch: Call<SearchResponse> = service.searchUser("mario", "start", "desc")
+callSearch.enqueue(object : Callback<SearchResponse> {
+
+    override fun onResponse(call: Call<SearchResponse>, response: Response<SearchResponse>) {
+        Log.d(TAG, "Response: ${response.body()}")
+        val errorBody = response.errorBody()
+        response.body()?.items?.let {
+            mRepositoryAdapter.updateAllData(it)
+        }
+    }
+
+    override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
+        t.printStackTrace()
+        Log.d(TAG, "onFailure: ${t.message}")
+    }
+})
+```
+> Sử dụng **response.code()** để check xem request có thành công hay không và dựa vào đó để check body phù hợp.
+
+## Retrofit with repository pattern
+

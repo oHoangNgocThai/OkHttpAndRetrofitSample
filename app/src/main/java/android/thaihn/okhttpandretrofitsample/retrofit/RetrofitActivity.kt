@@ -4,6 +4,7 @@ import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.thaihn.okhttpandretrofitsample.BuildConfig
 import android.thaihn.okhttpandretrofitsample.R
 import android.thaihn.okhttpandretrofitsample.databinding.ActivityRetrofitBinding
 import android.thaihn.okhttpandretrofitsample.entity.SearchResponse
@@ -77,6 +78,8 @@ class RetrofitActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<SearchResponse>, response: Response<SearchResponse>) {
                 Log.d(TAG, "Response: ${response.body()}")
+                val errorBody = response.errorBody()
+                val responseCode = response.code()
                 response.body()?.items?.let {
                     mRepositoryAdapter.updateAllData(it)
                 }
@@ -92,9 +95,11 @@ class RetrofitActivity : AppCompatActivity() {
     private fun createService(): GithubService {
         val BASE_URL = "https://api.github.com"
 
-        val interceptor = HttpLoggingInterceptor()
-        interceptor.level = HttpLoggingInterceptor.Level.BODY
-        val client = OkHttpClient.Builder().addInterceptor(interceptor).build()
+        val client = OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+            })
+            .build()
 
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
