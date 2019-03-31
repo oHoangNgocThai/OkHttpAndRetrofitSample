@@ -331,3 +331,67 @@ callSearch.enqueue(object : Callback<SearchResponse> {
 
 ## Retrofit with repository pattern
 
+* Thông qua **Repository Pattern** để quản lý tốt hơn về việc tạo ra một kho lưu trữ lấy dữ liệu từ client hoặc server.
+* Sủ dụng Repository có một số đặc điểm sau:
+    
+    * Các cuộc gọi d
+* Tạo một interface **DataSource** để định nghĩa các phương thức lấy dữ liệu ở cả api và local:
+
+```
+interface GithubDataSource {
+    fun searchRepository(name: String): Observable<SearchResponse>
+}
+```
+
+* Tiếp theo tạo **RemoteDataSoure** để định nghĩa phương thức lấy dữ liệu từ Remote Api, được cung cấp dựa trên **Retrofit** và tạo ra 1 instance của **GithubApi**.
+
+```
+class GithubRemoteDataSource(
+    private val githubApi: GithubService
+) : GithubDataSource {
+
+    override fun searchRepository(name: String): Observable<SearchResponse> {
+        return githubApi.searchUser(name, "start", "desc")
+    }
+}
+```
+
+* Tạo 1 class Repository để định nghĩa phương thức lấy ra dữ liệu như sau:
+
+```
+class GithubRepository(
+    private val githubRemoteDataSource: GithubRemoteDataSource
+) : GithubDataSource {
+
+    override fun searchRepository(name: String): Observable<SearchResponse> {
+        return githubRemoteDataSource.searchRepository(name)
+    }
+}
+```
+
+* Để cung cấp được instance của GithubApi, chúng ta thêm client của OkHttp như sau:
+
+```
+object RetrofitProvider {
+
+    private const val BASE_URL = "https://api.github.com"
+    private const val CONNECT_TIMEOUT = 10L
+    private const val READ_TIMEOUT = 10L
+    private const val WRITE_TIMEOUT = 10L
+
+    private fun providerHttpClient() = OkHttpClient.Builder()
+        .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+        .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+        .build()
+
+    private fun providerRetrofit() = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(providerHttpClient())
+        .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    fun providerGithubApi() = providerRetrofit().create(GithubService::class.java)
+}
+```
