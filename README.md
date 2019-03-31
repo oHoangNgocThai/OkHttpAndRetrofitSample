@@ -395,3 +395,125 @@ object RetrofitProvider {
     fun providerGithubApi() = providerRetrofit().create(GithubService::class.java)
 }
 ```
+
+
+## Retrofit 2 Client
+> Thiết lập Retrofit 2 và chạy trên Android rất đơn giản, nhưng đôi khi bạn gặp phải vài vấn đề như **Authorisation Headers**, **Basic Authentication** & Hỗ trợ API SSL.
+
+### Logging Interceptor
+
+* Thêm dependency của Loggin interceptor vào project:
+
+```
+implementation 'com.squareup.okhttp3:logging-interceptor:3.13.1'
+```
+
+* Tạo một instance của **OkHttpClient** để thêm client vào retrofit, tạo một instance của **HttpLoggingInterceptor()** để thêm Log bạn cần, giả sử như **HttpLoggingInterceptor.Level.BODY** bằng phương thức **setLevel()**.
+
+```
+fun providerClient(): OkHttpClient {
+    val clientBuilder = OkHttpClient.Builder()
+
+    val loginInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+    clientBuilder.addInterceptor(loginInterceptor)
+
+    return clientBuilder.build()
+}
+```
+
+* Thêm client vào việc tạo instance của retrofit bằng phương thức **addClient()**
+
+```
+return Retrofit.Builder()
+    .client(providerClient())
+    .addConverterFactory(GsonConverterFactory.create())
+    .build()
+```
+
+### Authorization Header
+
+* Thêm request header cho HTTP, ví dụ điển hình nhất là thêm **Authorization header** cho API của bạn.
+* Tạo instance của **Interceptor** và thêm các header mà bạn mong muốn vào bên trong của phương thức override **intercept**:
+
+```
+return Interceptor {
+    var request: okhttp3.Request = it.request()
+    val headers = request.headers().newBuilder().add("Authorization", "authToken").build()
+    request = request.newBuilder().headers(headers).build()
+    it.proceed(request)
+}
+``` 
+
+* **Basic authentication** là một sơ đồ xác thực cơ bản trong giao thức HTTP. Client gửi request đến HTTP sau đó kèm theo **Authorization header** chứa chuỗi cơ bản theo sau là khoảng trắng và tên người dùng được mã hóa dạng base64 **username:password**. Ví dụ:
+
+```
+Authorization: Basic ZGVtbzpwQDU1dzByZA==
+```
+
+* Để thêm **Basic Auth** vào trong header của API, sử dụng **OkHttp3 Credentials** để mã hóa tên người dùng và mật khẩu.
+
+```
+if (!TextUtils.isEmpty(username)
+    && !TextUtils.isEmpty(password)) {
+        authToken = Credentials.basic(username, password);
+}
+```
+
+### SSL Configuration
+
+* Theo mặc định, Retrofit không thể kết nối với các API được bảo vệ bằng SSL, vì vậy phải sử dụng Retrofit 2 Client để config connect được với SSL.
+* Bước đầu tiên, tạo file **.crt** nằm trong thư mục **raw** của resource. Sau đó tạo function để tự động sinh ra SSL certificate từ file **.crt** và trả về đối tượng **SSLContext**.
+
+```
+@Throws(
+    CertificateException::class, IOException::class, KeyStoreException::class, NoSuchAlgorithmException::class,
+    KeyManagementException::class
+)
+fun generateSSL(context: Context): SSLContext {
+    // Loading CAs from an InputStream
+    var cf: CertificateFactory? = null
+    cf = CertificateFactory.getInstance("X.509")
+
+    var ca: Certificate? = null
+    // I'm using Java7. If you used Java6 close it manually with finally.
+    context.resources.openRawResource(R.raw.demo).use { cert -> ca = cf!!.generateCertificate(cert) }
+
+    // Creating a KeyStore containing our trusted CAs
+    val keyStoreType = KeyStore.getDefaultType()
+    val keyStore = KeyStore.getInstance(keyStoreType)
+    keyStore.load(null, null)
+    keyStore.setCertificateEntry("ca", ca)
+
+    // Creating a TrustManager that trusts the CAs in our KeyStore.
+    val tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm()
+    val tmf = TrustManagerFactory.getInstance(tmfAlgorithm)
+    tmf.init(keyStore)
+
+    // Creating an SSLSocketFactory that uses our TrustManager
+    val sslContext = SSLContext.getInstance("TLS")
+    sslContext.init(null, tmf.trustManagers, null)
+
+    return sslContext
+}
+```
+
+* Set **SSLSocketFactory** vào OkHttpClient sử dụng SSLContext và cũng đặt trình xác minh tên máy chủ:
+
+```
+val okHttpClient = OkHttpClient.Builder()
+
+try {
+    okHttpClient.sslSocketFactory(generateSSL(context).socketFactory)
+} catch (e: Exception) {
+    e.printStackTrace()
+}
+
+okHttpClient.hostnameVerifier { hostname, session ->
+    val value = true
+    //TODO:Some logic to verify your host and set value
+    return@hostnameVerifier value
+}
+```
+
