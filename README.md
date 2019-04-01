@@ -162,7 +162,7 @@ val strResponse = response.body()?.string()?.trim()
 
 * Nếu muốn thực hiện call network bất đồng bộ, hãy sử dụng phương thức **enqueue**, sau đó dữ liệu trả về ở hàm override **onResponse** và on **onFailure**.
 
-# ơNetwork connection with Retrofitư(https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample/blob/master/app/Documents.md#network-connection-with-retrofit)
+# [Network connection with Retrofit](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample/blob/master/app/Documents.md#network-connection-with-retrofit)
 
 * Sử dụng thư viện Retrofit để xử lý các request và nhận về các response hoặc error. Được xem là thư viện về network mạnh nhất hiện giờ, trước kia có một thời đã sử dụng thư viện **Volley**.
 * Ứng dụng sử dụng **Restful APIs** để hiển thị nội dung được lấy từ các api. Mọi tương tác này đều cần có mạng để có thể thực hiện được.
@@ -175,7 +175,7 @@ implementation 'com.squareup.okhttp3:logging-interceptor:3.13.1'
 implementation 'com.squareup.okhttp3:okhttp:3.13.1'
 ```
 
-## ơRetrofit basicư(https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample/blob/master/app/Documents.md#retrofit-basic)
+## [Retrofit basic](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample/blob/master/app/Documents.md#retrofit-basic)
 
 * Tạo một Service API để định nghĩa phương thức request và các tham số cần truyền vào, ở đây mình sử dụng API search các repository của github:
 
@@ -202,7 +202,12 @@ fun searchUser(
 * Thông qua **Repository Pattern** để quản lý tốt hơn về việc tạo ra một kho lưu trữ lấy dữ liệu từ client hoặc server.
 * Sủ dụng Repository có một số đặc điểm sau:
     
-    * Các cuộc gọi d
+    * Các cuộc gọi đến repository luôn luôn không đồng bộ
+    * Gọi đến phương thức của repository sẽ nhận được 1 luồng callback hoặc 1 luồng kết quả.
+    * Mỗi repository được xác định bởi 1 interface và không cần quan tâm đến triển khai của các phương thức.
+    * Mỗi repository có thể có một số triển khai trong đó mỗi triển khai lại có trách nhiệm duy nhất và có thể mở rộng các triển khai bằng các sử dụng **decorator pattern**. 
+    * Có thể được configuration bởi dependency container(ví dụ như Dagger 2).
+    
 * Tạo một interface **DataSource** để định nghĩa các phương thức lấy dữ liệu ở cả api và local:
 
 ```
@@ -265,10 +270,11 @@ object RetrofitProvider {
 ```
 
 
-## Retrofit 2 Client
+## [Retrofit 2 Client](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#retrofit-2-client)
+
 > Thiết lập Retrofit 2 và chạy trên Android rất đơn giản, nhưng đôi khi bạn gặp phải vài vấn đề như **Authorisation Headers**, **Basic Authentication** & Hỗ trợ API SSL.
 
-### Logging Interceptor
+### [Logging Interceptor](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#logging-interceptor)
 
 * Thêm dependency của Loggin interceptor vào project:
 
@@ -300,7 +306,7 @@ return Retrofit.Builder()
     .build()
 ```
 
-### Authorization Header
+### [Authorization Header](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#authorization-header)
 
 * Thêm request header cho HTTP, ví dụ điển hình nhất là thêm **Authorization header** cho API của bạn.
 * Tạo instance của **Interceptor** và thêm các header mà bạn mong muốn vào bên trong của phương thức override **intercept**:
@@ -329,7 +335,7 @@ if (!TextUtils.isEmpty(username)
 }
 ```
 
-### SSL Configuration
+### [SSL Configuration](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#ssl-configuration)
 
 * Theo mặc định, Retrofit không thể kết nối với các API được bảo vệ bằng SSL, vì vậy phải sử dụng Retrofit 2 Client để config connect được với SSL.
 * Bước đầu tiên, tạo file **.crt** nằm trong thư mục **raw** của resource. Sau đó tạo function để tự động sinh ra SSL certificate từ file **.crt** và trả về đối tượng **SSLContext**.
@@ -387,7 +393,7 @@ okHttpClient.hostnameVerifier { hostname, session ->
 
 
 
-## Retrofit with LiveData
+## [Retrofit with LiveData](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#retrofit-with-livedata)
 
 * Thông thường khi thiết kế triến trúc là MVVM hoặc MVP, chúng ta thường muốn tương tác với repository thông qua ViewModel để nhận được những bản cập nhật mới nhất nếu có. Vấn đề nhận thấy là phải thực hiện gần nhưu cùng một số kiểm tra mỗi lần nhận được phản hồi, những kiểm tra lại dữ liệu này như:
 
@@ -398,7 +404,7 @@ okHttpClient.hostnameVerifier { hostname, session ->
 * Những vấn đề trên đã có từ rất lâu, trước cả khi có Architecture Component, ngoài ra nếu nhận được cập nhật cho observer của mình cũng phải kiểm tra lại nhiều lần để xử lý cho đúng. 
 * Vì vậy nếu như có thể xử lý được việc trừu tượng toàn bộ quá trình từ request callback đến gọi dữ liệu của mình sau đó cũng sửa đổi my observer để thông báo về cho người dùng về lỗi của họ.
 
-### API Concerns
+### [API Concerns](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#api-concerns)
 
 * Đầu tiên chúng ta sẽ đơn giản hóa phương thức callback bằng cách triển khai lại **interface Callback<T>** và cung cấp triển khai của mình sử dụng Observable:
 
@@ -499,7 +505,7 @@ class SignInInteractor : GenericRequestHandler<User>() {
 }
 ```
 
-### View concerns
+### [View concerns](https://github.com/oHoangNgocThai/OkHttpAndRetrofitSample#view-concerns)
 
 * Custom class Observer để trả về dữ liệu hoặc là error như sau:
 
