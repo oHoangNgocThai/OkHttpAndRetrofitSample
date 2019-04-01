@@ -172,8 +172,6 @@ inner class SearchRepositoryAsync : AsyncTask<String, Int, SearchResponse>() {
 stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
 ```
 
-## Optimize network data usage
-
 # Network connection with OkHttp
 
 * OkHTTP là một dự án mã nguồn mở được thiết kế để trở thành một client HTTP hiệu quả. Nó hỗ trợ giao thức SPDY, giao thức này là cơ sở cho HTTP 2.0 và cho nhiều request HTTP được phép trên một luồng socket.
@@ -517,3 +515,149 @@ okHttpClient.hostnameVerifier { hostname, session ->
 }
 ```
 
+
+
+## Retrofit with LiveData
+
+* Thông thường khi thiết kế triến trúc là MVVM hoặc MVP, chúng ta thường muốn tương tác với repository thông qua ViewModel để nhận được những bản cập nhật mới nhất nếu có. Vấn đề nhận thấy là phải thực hiện gần nhưu cùng một số kiểm tra mỗi lần nhận được phản hồi, những kiểm tra lại dữ liệu này như:
+
+    * Nếu response.body() không null mới thực hiện.
+    * Nếu không có exception được ném vào phương thức **onFailure()**.
+    * Phải check xem view của mình nếu như một exception nhận được nhưng không xử lý đúng như dữ liệu của mình.
+    
+* Những vấn đề trên đã có từ rất lâu, trước cả khi có Architecture Component, ngoài ra nếu nhận được cập nhật cho observer của mình cũng phải kiểm tra lại nhiều lần để xử lý cho đúng. 
+* Vì vậy nếu như có thể xử lý được việc trừu tượng toàn bộ quá trình từ request callback đến gọi dữ liệu của mình sau đó cũng sửa đổi my observer để thông báo về cho người dùng về lỗi của họ.
+
+### API Concerns
+
+* Đầu tiên chúng ta sẽ đơn giản hóa phương thức callback bằng cách triển khai lại **interface Callback<T>** và cung cấp triển khai của mình sử dụng Observable:
+
+```
+abstract class ApiCallback<T> : Callback<Response<T>> {
+
+    override fun onResponse(call: retrofit2.Call<Response<T>>, response: retrofit2.Response<Response<T>>) {
+        val body = response.body()
+        if (body != null) {
+            handleResponseData(body)
+        } else {
+            handleError(call)
+        }
+    }
+
+    override fun onFailure(call: retrofit2.Call<Response<T>>, t: Throwable) {
+        if (t is java.lang.Exception) {
+            handleException(t)
+        } else {
+            // Do something else
+        }
+    }
+
+    abstract fun handleResponseData(t: Response<T>)
+
+    abstract fun handleError(response: retrofit2.Call<Response<T>>)
+
+    abstract fun handleException(ex: Exception)
+}
+```
+
+* Class này xử lý các trường hợp lỗi, thành công hoặc exception sau đó cung cấp kết quả tùy thuộc vào phương thức được thực thi. Vì vậy làm giảm đi các quá trình check lại. Để làm cho việc xử lý lỗi ít hơn, hãy tạo 1 mô hình đặc biệt chỉ bao gồm kiểu dữ liệu chung và một exception.
+
+```
+class DataWrapper<T> {
+    var apiException: Exception? = null
+    var data: T? = null
+}
+```
+
+* Sau khi có DataWrapper, tiếp tục tạo một GenericRequestHandler để xử lý logic thường được sử dụng cho những request tới API:
+
+```
+abstract class GenericRequestHandler<T> {
+
+    abstract fun makeRequest(): Call<Response<T>>
+
+    fun doRequest(): LiveData<DataWrapper<T>> {
+        val liveData = MutableLiveData<DataWrapper<T>>()
+
+        val dataWrapper = DataWrapper<T>()
+
+        makeRequest().enqueue(object : ApiCallback<T>(){
+
+            override fun handleError(response: Call<Response<T>>) {
+                // handle error from response
+            }
+
+            override fun handleException(ex: Exception) {
+                dataWrapper.apiException = ex
+                liveData.value = dataWrapper
+            }
+
+            override fun handleResponseData(t: Response<T>) {
+                // parser data from data
+            }
+        })
+        return liveData
+    }
+}
+```
+
+* Sau khi được class xử lý việc gửi request, chúng ta sẽ cần class tạo ra **makeRequest()**.
+
+```
+class SignInInteractor : GenericRequestHandler<User>() {
+    private val authService = APIService.getInstance().getServiceForApi(AuthService::class.java)
+    private var userId: String? = null
+    private var pinCode: String? = null
+
+    fun onAuthRequest(): LiveData<DataWrapper<User>> {
+        return doRequests()
+    }
+
+    override fun makeRequest(): Call<Response<User>> {
+        return authService.postUserPhoneLogin(RequestBody.UserPhoneLogin(userId, pinCode))
+    }
+
+    companion object {
+
+        fun createInstance(userId: String, pinCode: String): SignInInteractor {
+            val signInWithPinLoader = SignInInteractor()
+            signInWithPinLoader.userId = userId
+            signInWithPinLoader.pinCode = pinCode
+            return signInWithPinLoader
+        }
+    }
+}
+```
+
+### View concerns
+
+* Custom class Observer để trả về dữ liệu hoặc là error như sau:
+
+```
+class ApiObserver<T>(private val changeListener: ChangeListener<T>) : Observer<DataWrapper<T>> {
+
+    fun onChanged(@Nullable tDataWrapper: DataWrapper<T>?) {
+        if (tDataWrapper != null) {
+            if (tDataWrapper.apiException != null) {
+                changeListener.onException(tDataWrapper.apiException)
+            } else {
+                changeListener.onSuccess(tDataWrapper.data)
+            }
+            return
+        }
+        //custom exceptionn to suite my use case
+//        changeListener.onException(ValidationAPIException(ERROR_CODE, null))
+    }
+
+    interface ChangeListener<T> {
+        fun onSuccess(dataWrapper: T?)
+        fun onException(exception: Exception?)
+    }
+
+    companion object {
+        private val ERROR_CODE = 0
+    }
+}
+```
+
+* Giờ thì xử lý Observer đó ở trong ViewModel và trả về dữ liệu thông qua LiveData về activity.
